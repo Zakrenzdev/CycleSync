@@ -157,6 +157,30 @@ const PHASE_DESC = {
   Luteal: "Progesteron meningkat, kamu mungkin merasa lebih tenang namun lebih mudah lelah.",
 };
 
+// Rekomendasi aktivitas & makanan yang bisa langsung dipraktikkan, sesuai fase siklus
+const PHASE_RECS = {
+  Menstruasi: {
+    icon: Droplet,
+    activity: "Prioritaskan istirahat, peregangan ringan, atau jalan santai. Kompres hangat di perut bantu redakan kram.",
+    food: "Perbanyak makanan tinggi zat besi — bayam, hati ayam, daging merah, atau kacang-kacangan — untuk mengganti darah yang hilang.",
+  },
+  Folikular: {
+    icon: Zap,
+    activity: "Energi lagi naik — waktu yang pas untuk olahraga intensitas tinggi (HIIT, lari) atau mulai proyek/kerjaan baru.",
+    food: "Makanan tinggi protein dan sayuran fermentasi bantu mendukung produksi estrogen yang meningkat.",
+  },
+  Ovulasi: {
+    icon: Sparkles,
+    activity: "Masa paling produktif dan percaya diri — cocok untuk presentasi, negosiasi, atau ketemuan penting.",
+    food: "Perbanyak minum air putih dan makanan kaya antioksidan seperti buah beri untuk mendukung masa subur.",
+  },
+  Luteal: {
+    icon: Moon,
+    activity: "Waktu yang tepat untuk pilates ringan, yoga, atau olahraga low-impact. Kurangi intensitas latihan berat.",
+    food: "Kurangi kafein, garam, dan gula untuk membantu cegah kembung dan perubahan mood (PMS).",
+  },
+};
+
 /* ---------------------------------------------------------------
    FIREBASE REALTIME DATABASE — penyimpanan permanen lintas sesi
    Dipakai langsung lewat REST API (fetch), jadi tetap berfungsi
@@ -533,33 +557,35 @@ function RegisterScreen({ onRegister, goLogin, prefillEmail }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto">
-      <AuthShellHeader title="Buat Akun CycleSync" subtitle="Simpan data siklus dan kesehatanmu dengan aman, tersinkron ke akunmu." />
-      <div className="px-6 space-y-3 pb-8">
-        <FieldInput icon={User} value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama lengkap" error={errors.name} />
-        <FieldInput icon={Mail} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Alamat email" error={errors.email} />
-        <FieldInput
-          icon={KeyRound} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kata sandi"
-          error={errors.password} showToggle revealed={reveal} onToggle={() => setReveal((v) => !v)}
-        />
-        <FieldInput
-          icon={KeyRound} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Konfirmasi kata sandi"
-          error={errors.confirm} showToggle revealed={reveal} onToggle={() => setReveal((v) => !v)}
-        />
-        <button
-          onClick={submit}
-          disabled={submitting}
-          className="w-full bg-black text-white py-3.5 rounded-full font-bold flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60"
-        >
-          {submitting ? <Loader2 size={18} className="animate-spin-slow" /> : <UserPlus size={18} />}
-          {submitting ? "Membuat akun..." : "Daftar"}
-        </button>
-        <p className="text-center text-xs text-gray-400 px-4">
-          Dengan mendaftar kamu menyetujui data siklusmu disimpan secara aman di akunmu.
-        </p>
-        <button onClick={goLogin} className="w-full text-center text-sm text-gray-500 hover:text-black transition-colors pt-2">
-          Sudah punya akun? <span className="font-semibold text-black">Masuk</span>
-        </button>
+    <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto py-8">
+      <div className="w-full max-w-sm mx-auto">
+        <AuthShellHeader title="Buat Akun CycleSync" subtitle="Simpan data siklus dan kesehatanmu dengan aman, tersinkron ke akunmu." />
+        <div className="px-6 space-y-3 pb-2">
+          <FieldInput icon={User} value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama lengkap" error={errors.name} />
+          <FieldInput icon={Mail} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Alamat email" error={errors.email} />
+          <FieldInput
+            icon={KeyRound} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kata sandi"
+            error={errors.password} showToggle revealed={reveal} onToggle={() => setReveal((v) => !v)}
+          />
+          <FieldInput
+            icon={KeyRound} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Konfirmasi kata sandi"
+            error={errors.confirm} showToggle revealed={reveal} onToggle={() => setReveal((v) => !v)}
+          />
+          <button
+            onClick={submit}
+            disabled={submitting}
+            className="w-full bg-black text-white py-3.5 rounded-full font-bold flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60"
+          >
+            {submitting ? <Loader2 size={18} className="animate-spin-slow" /> : <UserPlus size={18} />}
+            {submitting ? "Membuat akun..." : "Daftar"}
+          </button>
+          <p className="text-center text-xs text-gray-400 px-4">
+            Dengan mendaftar kamu menyetujui data siklusmu disimpan secara aman di akunmu.
+          </p>
+          <button onClick={goLogin} className="w-full text-center text-sm text-gray-500 hover:text-black transition-colors pt-2">
+            Sudah punya akun? <span className="font-semibold text-black">Masuk</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -589,26 +615,28 @@ function LoginScreen({ onLogin, goRegister, prefillEmail }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto">
-      <AuthShellHeader title="Selamat Datang Kembali" subtitle="Masuk untuk melanjutkan pelacakan siklusmu." />
-      <div className="px-6 space-y-3 pb-8">
-        <FieldInput icon={Mail} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Alamat email" />
-        <FieldInput
-          icon={KeyRound} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kata sandi"
-          showToggle revealed={reveal} onToggle={() => setReveal((v) => !v)}
-        />
-        {error && <p className="text-xs text-red-500 px-1">{error}</p>}
-        <button
-          onClick={submit}
-          disabled={submitting}
-          className="w-full bg-black text-white py-3.5 rounded-full font-bold flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60"
-        >
-          {submitting ? <Loader2 size={18} className="animate-spin-slow" /> : <LogIn size={18} />}
-          {submitting ? "Memeriksa..." : "Masuk"}
-        </button>
-        <button onClick={goRegister} className="w-full text-center text-sm text-gray-500 hover:text-black transition-colors pt-2">
-          Belum punya akun? <span className="font-semibold text-black">Daftar</span>
-        </button>
+    <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto py-8">
+      <div className="w-full max-w-sm mx-auto">
+        <AuthShellHeader title="Selamat Datang Kembali" subtitle="Masuk untuk melanjutkan pelacakan siklusmu." />
+        <div className="px-6 space-y-3 pb-2">
+          <FieldInput icon={Mail} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Alamat email" />
+          <FieldInput
+            icon={KeyRound} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kata sandi"
+            showToggle revealed={reveal} onToggle={() => setReveal((v) => !v)}
+          />
+          {error && <p className="text-xs text-red-500 px-1">{error}</p>}
+          <button
+            onClick={submit}
+            disabled={submitting}
+            className="w-full bg-black text-white py-3.5 rounded-full font-bold flex items-center justify-center gap-2 active:scale-95 hover:scale-[1.02] transition-all duration-300 disabled:opacity-60"
+          >
+            {submitting ? <Loader2 size={18} className="animate-spin-slow" /> : <LogIn size={18} />}
+            {submitting ? "Memeriksa..." : "Masuk"}
+          </button>
+          <button onClick={goRegister} className="w-full text-center text-sm text-gray-500 hover:text-black transition-colors pt-2">
+            Belum punya akun? <span className="font-semibold text-black">Daftar</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -694,7 +722,7 @@ function OnboardingScreen({ name, onFinish, now }) {
 --------------------------------------------------------------- */
 
 function emptyLog() {
-  return { mood: [], physical: [], flow: [], cravings: [], quick: [], note: "", sleep: null, water: null };
+  return { mood: [], physical: [], flow: [], cravings: [], quick: [], note: "", sleep: null, water: null, bbt: null, pillTaken: false };
 }
 function getLog(logs, iso) {
   return logs[iso] ? { ...emptyLog(), ...logs[iso] } : emptyLog();
@@ -712,7 +740,7 @@ function allTags(log) {
 
 const QUICK_TAGS = ["Bahagia", "Lelah", "Kram", "Flow Ringan", "Sakit Kepala"];
 
-function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings, logs, updateLogs }) {
+function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings, logs, updateLogs, contraception }) {
   const [showAdd, setShowAdd] = useState(false);
   const [newTag, setNewTag] = useState("");
   const todayISO = toISO(now);
@@ -728,6 +756,14 @@ function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings,
       const nextQuick = has ? cur.quick.filter((x) => x !== t) : [...cur.quick, t];
       return { ...prev, [todayISO]: { ...cur, quick: nextQuick } };
     });
+  };
+
+  const togglePillTaken = () => {
+    updateLogs((prev) => {
+      const cur = getLog(prev, todayISO);
+      return { ...prev, [todayISO]: { ...cur, pillTaken: !cur.pillTaken } };
+    });
+    if (!todayLog.pillTaken) toast("Pil hari ini dicatat sudah diminum");
   };
 
   const addCustomTag = () => {
@@ -804,6 +840,51 @@ function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings,
             <p className="text-sm text-gray-500 px-2">{PHASE_DESC[info.phase]}</p>
           </div>
         </Card>
+
+        <Card className="animate-screenFade" style={{ animationDelay: "60ms" }}>
+          <div className="flex items-center gap-2 mb-3">
+            {(() => {
+              const RecIcon = PHASE_RECS[info.phase].icon;
+              return (
+                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                  <RecIcon size={16} />
+                </div>
+              );
+            })()}
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Rekomendasi Untukmu</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="flex gap-2.5">
+              <Dumbbell size={16} className="text-gray-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-gray-700">{PHASE_RECS[info.phase].activity}</p>
+            </div>
+            <div className="flex gap-2.5">
+              <Egg size={16} className="text-gray-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-gray-700">{PHASE_RECS[info.phase].food}</p>
+            </div>
+          </div>
+        </Card>
+
+        {contraception?.type === "pil" && contraception?.pillReminderOn && (
+          <Card
+            onClick={togglePillTaken}
+            className={`flex items-center justify-between !p-4 animate-screenFade ${todayLog.pillTaken ? "bg-black text-white" : ""}`}
+            style={{ animationDelay: "80ms" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${todayLog.pillTaken ? "bg-white/15" : "bg-gray-100"}`}>
+                {todayLog.pillTaken ? <Check size={18} /> : <AlarmClock size={18} />}
+              </div>
+              <div>
+                <p className="text-sm font-medium">{todayLog.pillTaken ? "Pil sudah diminum" : "Pengingat: minum pil KB"}</p>
+                <p className={`text-xs ${todayLog.pillTaken ? "text-white/70" : "text-gray-500"}`}>Jadwal {contraception.pillReminderTime}</p>
+              </div>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${todayLog.pillTaken ? "border-white bg-white" : "border-gray-300"}`}>
+              {todayLog.pillTaken && <Check size={14} className="text-black" />}
+            </div>
+          </Card>
+        )}
 
         <div className="space-y-2">
           <h3 className="text-sm font-semibold uppercase tracking-wider">Log Gejala Cepat</h3>
@@ -1344,6 +1425,18 @@ function DailyDetailScreen({ pop, push, params, now, cycleSettings, logs, goals 
           </Card>
         </div>
 
+        {log.bbt != null && (
+          <Card className="flex items-center gap-3">
+            <div className="bg-gray-50 p-2 rounded-xl">
+              <Flame size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Suhu Basal Tubuh</p>
+              <p className="text-lg font-semibold">{log.bbt.toFixed(2)}°C</p>
+            </div>
+          </Card>
+        )}
+
         <Card>
           <div className="flex items-center gap-2 mb-3">
             <PenLine size={18} className="text-gray-400" />
@@ -1404,6 +1497,7 @@ function EditSymptomsScreen({ pop, push, params, toast, logs, updateLogs, now })
   const [cravings, setCravings] = useState(existing.cravings);
   const [sleep, setSleep] = useState(existing.sleep);
   const [water, setWater] = useState(existing.water);
+  const [bbt, setBbt] = useState(existing.bbt);
   const [note, setNote] = useState(existing.note);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -1420,6 +1514,7 @@ function EditSymptomsScreen({ pop, push, params, toast, logs, updateLogs, now })
     setNote("");
     setSleep(null);
     setWater(null);
+    setBbt(null);
     setShowResetConfirm(false);
     toast("Semua gejala direset");
   };
@@ -1432,7 +1527,7 @@ function EditSymptomsScreen({ pop, push, params, toast, logs, updateLogs, now })
   const saveAll = () => {
     updateLogs((prev) => {
       const cur = getLog(prev, dateISO);
-      return { ...prev, [dateISO]: { ...cur, mood, physical, flow, cravings, note, sleep, water } };
+      return { ...prev, [dateISO]: { ...cur, mood, physical, flow, cravings, note, sleep, water, bbt } };
     });
     setShowConfirm(false);
     push("success", { dateISO });
@@ -1513,6 +1608,15 @@ function EditSymptomsScreen({ pop, push, params, toast, logs, updateLogs, now })
           </div>
           <Stepper label="Jam Tidur" value={sleep} onChange={setSleep} step={0.5} min={0} max={14} format={(v) => `${v}j`} />
           <Stepper label="Air Minum" value={water} onChange={setWater} step={100} min={0} max={5000} format={(v) => `${(v / 1000).toFixed(1)}L`} />
+        </section>
+
+        <section className="space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Flame size={18} className="text-gray-400" />
+            <h2 className="text-lg font-semibold">Suhu Basal Tubuh (BBT)</h2>
+          </div>
+          <p className="text-xs text-gray-500 -mt-1">Ukur segera setelah bangun tidur, sebelum beraktivitas, untuk hasil paling akurat.</p>
+          <Stepper label="Suhu Basal" value={bbt} onChange={setBbt} step={0.05} min={35} max={40} format={(v) => `${v.toFixed(2)}°C`} />
         </section>
 
         <div className="w-full h-px bg-gray-100" />
@@ -1625,6 +1729,12 @@ function Confetti() {
   );
 }
 
+const STREAK_BADGES = [
+  { days: 7, label: "7 Hari", icon: Flame, desc: "Seminggu penuh mencatat" },
+  { days: 30, label: "30 Hari", icon: Sparkles, desc: "Sebulan konsisten" },
+  { days: 100, label: "100 Hari", icon: BadgeCheck, desc: "Master pencatatan" },
+];
+
 function SuccessScreen({ goHome, goDetail, params }) {
   const dateISO = params?.dateISO;
   const date = dateISO ? fromISO(dateISO) : new Date();
@@ -1726,6 +1836,7 @@ function SettingsScreen({ push, onBell, unread, toast, profile, notif, updateNot
           <Card className="!p-0 divide-y divide-gray-100">
             {[
               { label: "Pelacakan Siklus", icon: CalendarIcon, key: "cycleTracking" },
+              { label: "Kontrasepsi & Obat", icon: Shield, key: "contraception" },
               { label: "Pencatatan Gejala", icon: Sparkles, key: "symptomSettings" },
               { label: "Penetapan Target", icon: Flame, key: "goalSetting" },
             ].map(({ label, icon: Icon, key }) => (
@@ -1855,6 +1966,7 @@ function ProfileScreen({ pop, push, toast, profile, updateProfile, logs, now, cy
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.name);
   const [showSignOut, setShowSignOut] = useState(false);
+  const [showBadgeConfetti, setShowBadgeConfetti] = useState(false);
   const info = getCycleInfo(cycleSettings.lastPeriodStart, cycleSettings.cycleLength, cycleSettings.periodLength, now);
 
   // hitung streak pencatatan berturut-turut hingga hari ini
@@ -1866,6 +1978,17 @@ function ProfileScreen({ pop, push, toast, profile, updateProfile, logs, now, cy
     else if (i > 0 || logTagCount(getLog(logs, toISO(now))) > 0) break;
     else break;
   }
+
+  // Rayakan setiap kali streak persis menyentuh salah satu milestone badge
+  useEffect(() => {
+    const hit = STREAK_BADGES.find((b) => b.days === streak);
+    if (hit) {
+      setShowBadgeConfetti(true);
+      toast(`Selamat! Lencana "${hit.label}" terbuka 🎉`);
+      const t = setTimeout(() => setShowBadgeConfetti(false), 2200);
+      return () => clearTimeout(t);
+    }
+  }, [streak]);
 
   const saveName = () => {
     const val = nameDraft.trim();
@@ -1879,7 +2002,12 @@ function ProfileScreen({ pop, push, toast, profile, updateProfile, logs, now, cy
   return (
     <>
       <TopBar title="Profil" onBack={pop} />
-      <main className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 py-5 space-y-4 relative">
+        {showBadgeConfetti && (
+          <div className="fixed inset-0 pointer-events-none z-50">
+            <Confetti />
+          </div>
+        )}
         <Card className="flex flex-col items-center text-center">
           <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-100 flex items-center justify-center text-3xl font-semibold mb-4">
             {profile.name.charAt(0)}
@@ -1931,6 +2059,30 @@ function ProfileScreen({ pop, push, toast, profile, updateProfile, logs, now, cy
             </div>
           </Card>
         </div>
+
+        <Card>
+          <h3 className="text-lg font-semibold mb-1">Lencana Pencatatan</h3>
+          <p className="text-sm text-gray-500 mb-4">Rentetan mencatatmu saat ini: {streak} hari</p>
+          <div className="grid grid-cols-3 gap-3">
+            {STREAK_BADGES.map((b) => {
+              const unlocked = streak >= b.days;
+              const Icon = b.icon;
+              return (
+                <div
+                  key={b.days}
+                  className={`flex flex-col items-center text-center gap-2 p-3 rounded-2xl border transition-all duration-300 ${
+                    unlocked ? "bg-black border-black text-white" : "bg-gray-50 border-gray-100 text-gray-300"
+                  }`}
+                >
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center ${unlocked ? "bg-white/15" : "bg-white"}`}>
+                    <Icon size={20} />
+                  </div>
+                  <span className={`text-xs font-semibold ${unlocked ? "text-white" : "text-gray-400"}`}>{b.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
 
         <Card>
           <h3 className="text-lg font-semibold mb-3">Pengaturan Akun</h3>
@@ -2156,6 +2308,107 @@ function CycleTrackingScreen({ pop, toast, cycleSettings, updateCycleSettings, n
         }}
         onCancel={() => setShowResetConfirm(false)}
       />
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------
+   KONTRASEPSI & OBAT
+--------------------------------------------------------------- */
+
+function ContraceptionScreen({ pop, toast, contraception, updateContraception, now }) {
+  const type = contraception.type || "none";
+  const typeInfo = CONTRACEPTION_TYPES.find((t) => t.key === type) || CONTRACEPTION_TYPES[0];
+  const startDate = contraception.startDate ? fromISO(contraception.startDate) : null;
+  const nextChangeDate = startDate && typeInfo.durationMonths ? (() => {
+    const d = new Date(startDate);
+    d.setMonth(d.getMonth() + typeInfo.durationMonths);
+    return d;
+  })() : null;
+  const daysUntilChange = nextChangeDate ? diffDays(nextChangeDate, now) : null;
+
+  const setType = (key) => {
+    updateContraception((p) => ({ ...p, type: key }));
+    toast(`Metode diperbarui: ${CONTRACEPTION_TYPES.find((t) => t.key === key)?.label}`);
+  };
+
+  return (
+    <>
+      <TopBar title="Kontrasepsi & Obat" onBack={pop} />
+      <main className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        <p className="text-sm text-gray-500">
+          Mencatat metode kontrasepsimu membantu CycleSync memahami kenapa siklusmu mungkin berubah, karena kontrasepsi hormonal bisa memengaruhi keteraturan haid.
+        </p>
+
+        <Card>
+          <h3 className="text-sm font-semibold uppercase tracking-wider mb-3">Metode yang Digunakan</h3>
+          <div className="flex flex-wrap gap-2">
+            {CONTRACEPTION_TYPES.map((t) => (
+              <Pill key={t.key} label={t.label} active={type === t.key} onClick={() => setType(t.key)} />
+            ))}
+          </div>
+        </Card>
+
+        {type !== "none" && type !== "kondom" && (
+          <Card className="space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Tanggal Mulai Pakai</h3>
+            <input
+              type="date"
+              value={contraception.startDate || ""}
+              onChange={(e) => updateContraception((p) => ({ ...p, startDate: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:border-black transition-colors"
+            />
+            {typeInfo.durationMonths && nextChangeDate && (
+              <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                <Clock size={18} className="text-gray-400 shrink-0" />
+                <p className="text-sm text-gray-700">
+                  Perkiraan waktu {type === "suntik" ? "suntik ulang" : "ganti/lepas"}: <span className="font-semibold">{formatDayMonth(nextChangeDate)}</span>
+                  {daysUntilChange != null && daysUntilChange >= 0 && ` (${daysUntilChange} hari lagi)`}
+                </p>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {type === "pil" && (
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlarmClock size={18} className="text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium">Pengingat Minum Pil Harian</p>
+                  <p className="text-xs text-gray-500">Notifikasi setiap hari di jam yang sama</p>
+                </div>
+              </div>
+              <Toggle
+                checked={contraception.pillReminderOn}
+                onChange={(v) => {
+                  updateContraception((p) => ({ ...p, pillReminderOn: v }));
+                  toast(v ? "Pengingat pil diaktifkan" : "Pengingat pil dimatikan");
+                }}
+              />
+            </div>
+            {contraception.pillReminderOn && (
+              <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+                <span className="text-sm">Jam Pengingat</span>
+                <input
+                  type="time"
+                  value={contraception.pillReminderTime}
+                  onChange={(e) => updateContraception((p) => ({ ...p, pillReminderTime: e.target.value }))}
+                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-black transition-colors"
+                />
+              </div>
+            )}
+          </Card>
+        )}
+
+        <Card className="flex gap-3 !p-4">
+          <Info size={18} className="text-gray-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Data ini bukan pengganti saran medis. Selalu konsultasikan pilihan dan jadwal kontrasepsimu dengan dokter atau bidan.
+          </p>
+        </Card>
+      </main>
     </>
   );
 }
@@ -2743,6 +2996,22 @@ const DEFAULT_NOTIF = {
   trackPhysical: true, trackEmotional: true, trackEnergy: false, logFrequency: "daily", quickLogWidget: true, alertShade: false,
 };
 
+const CONTRACEPTION_TYPES = [
+  { key: "none", label: "Tidak Ada", durationMonths: null },
+  { key: "pil", label: "Pil KB", durationMonths: null },
+  { key: "iud", label: "IUD", durationMonths: 60 },
+  { key: "implan", label: "Implan", durationMonths: 36 },
+  { key: "suntik", label: "Suntik KB", durationMonths: 3 },
+  { key: "kondom", label: "Kondom", durationMonths: null },
+];
+
+const DEFAULT_CONTRACEPTION = {
+  type: "none",
+  startDate: null,
+  pillReminderOn: false,
+  pillReminderTime: "20:00",
+};
+
 function defaultCycleSettings(today) {
   return {
     lastPeriodStart: toISO(addDays(today, -13)),
@@ -2764,6 +3033,7 @@ function defaultUserRecord(name, email, password, now) {
     cycleSettings: defaultCycleSettings(now),
     goals: DEFAULT_GOALS,
     notif: DEFAULT_NOTIF,
+    contraception: DEFAULT_CONTRACEPTION,
     logs: {},
   };
 }
@@ -2792,6 +3062,7 @@ export default function CycleSyncApp() {
   const [cycleSettings, setCycleSettings] = useState(defaultCycleSettings(new Date()));
   const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [notif, setNotif] = useState(DEFAULT_NOTIF);
+  const [contraception, setContraception] = useState(DEFAULT_CONTRACEPTION);
   const [logs, setLogs] = useState({});
 
   const userKeyRef = useRef(null);
@@ -2817,6 +3088,7 @@ export default function CycleSyncApp() {
     setCycleSettings(data.cycleSettings || defaultCycleSettings(new Date()));
     setGoals(data.goals || DEFAULT_GOALS);
     setNotif(data.notif || DEFAULT_NOTIF);
+    setContraception(data.contraception || DEFAULT_CONTRACEPTION);
     setLogs(data.logs || {});
   };
 
@@ -2900,6 +3172,7 @@ export default function CycleSyncApp() {
   const updateCycleSettings = useCallback(makeFieldUpdater(setCycleSettings, "cycleSettings"), []);
   const updateGoals = useCallback(makeFieldUpdater(setGoals, "goals"), []);
   const updateNotif = useCallback(makeFieldUpdater(setNotif, "notif"), []);
+  const updateContraception = useCallback(makeFieldUpdater(setContraception, "contraception"), []);
   const updateLogs = useCallback(makeFieldUpdater(setLogs, "logs"), []);
 
   const updateAccountInfo = async ({ name, email }) => {
@@ -2950,7 +3223,7 @@ export default function CycleSyncApp() {
   if (authStatus === "ready") {
     switch (current.screen) {
       case "today":
-        content = <TodayScreen push={push} onBell={onBell} unread={unread} toast={toast} now={now} profile={profile} cycleSettings={cycleSettings} logs={logs} updateLogs={updateLogs} />;
+        content = <TodayScreen push={push} onBell={onBell} unread={unread} toast={toast} now={now} profile={profile} cycleSettings={cycleSettings} logs={logs} updateLogs={updateLogs} contraception={contraception} />;
         break;
       case "insights":
         content = <InsightsScreen onBell={onBell} unread={unread} now={now} cycleSettings={cycleSettings} logs={logs} />;
@@ -2966,6 +3239,9 @@ export default function CycleSyncApp() {
             onLogout={logout}
           />
         );
+        break;
+      case "contraception":
+        content = <ContraceptionScreen pop={pop} toast={toast} contraception={contraception} updateContraception={updateContraception} now={now} />;
         break;
       case "dailyDetail":
         content = <DailyDetailScreen pop={pop} push={push} params={current.params} now={now} cycleSettings={cycleSettings} logs={logs} goals={goals} />;
@@ -2995,7 +3271,7 @@ export default function CycleSyncApp() {
         content = <NotificationSettingsScreen pop={pop} toast={toast} notif={notif} updateNotif={updateNotif} />;
         break;
       default:
-        content = <TodayScreen push={push} onBell={onBell} unread={unread} toast={toast} now={now} profile={profile} cycleSettings={cycleSettings} logs={logs} updateLogs={updateLogs} />;
+        content = <TodayScreen push={push} onBell={onBell} unread={unread} toast={toast} now={now} profile={profile} cycleSettings={cycleSettings} logs={logs} updateLogs={updateLogs} contraception={contraception} />;
     }
   }
 
