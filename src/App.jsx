@@ -107,6 +107,21 @@ function greetingFor(hour) {
   return "Selamat malam";
 }
 
+// Sapaan/pengingat ringan yang muncul sesuai jam saat app dibuka
+const HOURLY_CHECKINS = [
+  { key: "dinihari", start: 0, end: 4, title: "Masih Bangun?", message: "Udah larut nih. Jangan lupa istirahat ya 🌙" },
+  { key: "pagi1", start: 4, end: 7, title: "Pagi!", message: "Udah bangun dan mandi belum? 🌅" },
+  { key: "pagi2", start: 7, end: 10, title: "Selamat Pagi", message: "Udah sarapan belum nih?" },
+  { key: "siang1", start: 10, end: 13, title: "Halo!", message: "Udah minum air putih hari ini?" },
+  { key: "siang2", start: 13, end: 15, title: "Waktunya Makan Siang", message: "Udah makan siang belum?" },
+  { key: "sore", start: 15, end: 18, title: "Sore!", message: "Udah istirahat sebentar? Gimana rasanya hari ini?" },
+  { key: "malam1", start: 18, end: 21, title: "Malam!", message: "Udah makan malam belum?" },
+  { key: "malam2", start: 21, end: 24, title: "Menjelang Tidur", message: "Udah siap-siap tidur? Gimana harimu tadi?" },
+];
+function getHourlyCheckin(hour) {
+  return HOURLY_CHECKINS.find((b) => hour >= b.start && hour < b.end) || HOURLY_CHECKINS[0];
+}
+
 // Info siklus untuk TANGGAL tertentu — dipakai berulang untuk kalender, today, insight, dsb.
 function getCycleInfo(lastPeriodStartISO, cycleLength, periodLength, refDate) {
   const lastStart = stripTime(fromISO(lastPeriodStartISO));
@@ -334,19 +349,36 @@ function Pill({ label, active, onClick }) {
   );
 }
 
-function Card({ children, className = "", onClick, style }) {
+function Card({ children, className = "", onClick, style, accent }) {
+  const AccentIcon = accent?.icon;
   return (
     <div
       onClick={onClick}
       style={style}
-      className={`bg-white border border-gray-200 rounded-2xl p-5 transition-all duration-300 hover:shadow-md hover:scale-[1.01] ${
-        onClick ? "cursor-pointer active:scale-[0.99]" : ""
-      } ${className}`}
+      className={`relative border rounded-2xl p-5 transition-all duration-300 hover:shadow-md hover:scale-[1.01] ${
+        accent ? `bg-gradient-to-br ${accent.grad} border-gray-100 overflow-hidden` : "bg-white border-gray-200"
+      } ${onClick ? "cursor-pointer active:scale-[0.99]" : ""} ${className}`}
     >
+      {AccentIcon && (
+        <AccentIcon size={88} strokeWidth={1.5} className={`absolute -right-4 -top-4 -z-10 opacity-25 ${accent.iconColor}`} />
+      )}
       {children}
     </div>
   );
 }
+
+// Palet aksen buat variasi visual antar card — gradient pastel + warna icon dekoratif
+const CARD_ACCENTS = {
+  rose: { grad: "from-rose-50 to-white", iconColor: "text-rose-300" },
+  amber: { grad: "from-amber-50 to-white", iconColor: "text-amber-300" },
+  sky: { grad: "from-sky-50 to-white", iconColor: "text-sky-300" },
+  violet: { grad: "from-violet-50 to-white", iconColor: "text-violet-300" },
+  emerald: { grad: "from-emerald-50 to-white", iconColor: "text-emerald-300" },
+  fuchsia: { grad: "from-fuchsia-50 to-white", iconColor: "text-fuchsia-300" },
+};
+
+// Aksen kartu rekomendasi mengikuti fase siklus yang sedang aktif
+const PHASE_ACCENT_KEY = { Menstruasi: "rose", Folikular: "amber", Ovulasi: "sky", Luteal: "violet" };
 
 function TopBar({ title, onBack, onBell, showLogo, unread, rightNode }) {
   return (
@@ -467,6 +499,48 @@ function ConfirmDialog({ open, icon: Icon, title, message, confirmLabel = "Simpa
           </button>
           <button onClick={onCancel} className="w-full py-3 border border-gray-200 rounded-full font-medium hover:bg-gray-50 transition-colors active:scale-95">
             {cancelLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CheckinDialog({ open, checkin, onSave, onSkip }) {
+  const [reply, setReply] = useState("");
+  useEffect(() => {
+    if (open) setReply("");
+  }, [open, checkin?.key]);
+  if (!open || !checkin) return null;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-fadeIn">
+      <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-scaleIn">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-11 h-11 rounded-full bg-black flex items-center justify-center text-white shrink-0">
+            <Bell size={18} />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold leading-tight">{checkin.title}</h3>
+            <p className="text-sm text-gray-500">{checkin.message}</p>
+          </div>
+        </div>
+        <textarea
+          autoFocus
+          value={reply}
+          onChange={(e) => setReply(e.target.value)}
+          placeholder="Tulis balasan singkat (opsional)..."
+          rows={3}
+          className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-black transition-colors resize-none mt-1"
+        />
+        <div className="mt-4 flex flex-col gap-2">
+          <button
+            onClick={() => onSave(reply.trim())}
+            className="w-full py-3 bg-black text-white rounded-full font-bold active:scale-95 hover:scale-[1.02] transition-all duration-300"
+          >
+            Simpan
+          </button>
+          <button onClick={onSkip} className="w-full py-3 border border-gray-200 rounded-full font-medium hover:bg-gray-50 transition-colors">
+            Nanti Saja
           </button>
         </div>
       </div>
@@ -722,7 +796,7 @@ function OnboardingScreen({ name, onFinish, now }) {
 --------------------------------------------------------------- */
 
 function emptyLog() {
-  return { mood: [], physical: [], flow: [], cravings: [], quick: [], note: "", sleep: null, water: null, bbt: null, pillTaken: false };
+  return { mood: [], physical: [], flow: [], cravings: [], quick: [], note: "", sleep: null, water: null, bbt: null, pillTaken: false, checkins: {} };
 }
 function getLog(logs, iso) {
   return logs[iso] ? { ...emptyLog(), ...logs[iso] } : emptyLog();
@@ -779,7 +853,7 @@ function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings,
     setShowAdd(false);
   };
 
-  const radius = 88;
+  const radius = 80;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - info.cycleDay / cycleSettings.cycleLength);
 
@@ -841,12 +915,12 @@ function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings,
           </div>
         </Card>
 
-        <Card className="animate-screenFade" style={{ animationDelay: "60ms" }}>
+        <Card className="animate-screenFade" style={{ animationDelay: "60ms" }} accent={{ ...CARD_ACCENTS[PHASE_ACCENT_KEY[info.phase]], icon: PHASE_RECS[info.phase].icon }}>
           <div className="flex items-center gap-2 mb-3">
             {(() => {
               const RecIcon = PHASE_RECS[info.phase].icon;
               return (
-                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-full bg-white/70 flex items-center justify-center shrink-0">
                   <RecIcon size={16} />
                 </div>
               );
@@ -917,7 +991,7 @@ function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings,
           )}
         </div>
 
-        <Card>
+        <Card accent={{ ...CARD_ACCENTS.fuchsia, icon: CalendarIcon }}>
           <h3 className="text-sm font-semibold uppercase tracking-wider mb-3">Fase Mendatang</h3>
           {upcoming.map((p, i) => {
             const d = diffDays(p.date, now);
@@ -940,7 +1014,7 @@ function TodayScreen({ push, onBell, unread, toast, now, profile, cycleSettings,
           })}
         </Card>
 
-        <Card>
+        <Card accent={{ ...CARD_ACCENTS.emerald, icon: Zap }}>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider">Tren Minggu Ini</h3>
             <span className="text-sm text-gray-500">Jumlah gejala</span>
@@ -1272,7 +1346,7 @@ function CalendarScreen({ push, onBell, unread, toast, now, cycleSettings, logs 
           </div>
         </Card>
 
-        <Card>
+        <Card accent={{ ...CARD_ACCENTS.sky, icon: Egg }}>
           <h2 className="text-lg font-semibold mb-3">Jadwal Mendatang</h2>
           <div className="space-y-2">
             <button
@@ -1309,14 +1383,14 @@ function CalendarScreen({ push, onBell, unread, toast, now, cycleSettings, logs 
         </Card>
 
         <div className="grid grid-cols-2 gap-3">
-          <Card className="aspect-square flex flex-col justify-between">
+          <Card className="aspect-square flex flex-col justify-between" accent={{ ...CARD_ACCENTS.rose, icon: Droplet }}>
             <Droplet size={20} />
             <div>
               <p className="text-xs text-gray-500">Fase</p>
               <p className="text-lg font-semibold leading-tight">{info.phase}</p>
             </div>
           </Card>
-          <Card className="aspect-square flex flex-col justify-between">
+          <Card className="aspect-square flex flex-col justify-between" accent={{ ...CARD_ACCENTS.violet, icon: CalendarIcon }}>
             <CalendarIcon size={20} />
             <div>
               <p className="text-xs text-gray-500">Hari Ke-</p>
@@ -1327,7 +1401,7 @@ function CalendarScreen({ push, onBell, unread, toast, now, cycleSettings, logs 
 
         <button
           onClick={() => push("editSymptoms", { dateISO: toISO(now) })}
-          className="sticky bottom-2 w-full bg-black text-white py-4 rounded-full font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 hover:scale-[1.02] transition-all duration-300"
+          className="w-full bg-black text-white py-4 rounded-full font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 hover:scale-[1.02] transition-all duration-300"
         >
           <Plus size={20} /> Tambah Catatan Harian
         </button>
@@ -2040,8 +2114,8 @@ function ProfileScreen({ pop, push, toast, profile, updateProfile, logs, now, cy
         </Card>
 
         <div className="grid grid-cols-2 gap-3">
-          <Card className="flex items-center gap-3">
-            <div className="bg-gray-50 p-2 rounded-xl">
+          <Card className="flex items-center gap-3" accent={{ ...CARD_ACCENTS.amber, icon: Flame }}>
+            <div className="bg-white/70 p-2 rounded-xl">
               <Flame size={20} />
             </div>
             <div>
@@ -2049,8 +2123,8 @@ function ProfileScreen({ pop, push, toast, profile, updateProfile, logs, now, cy
               <p className="text-lg font-semibold">{streak} Hari</p>
             </div>
           </Card>
-          <Card className="flex items-center gap-3">
-            <div className="bg-gray-50 p-2 rounded-xl">
+          <Card className="flex items-center gap-3" accent={{ ...CARD_ACCENTS.violet, icon: CalendarIcon }}>
+            <div className="bg-white/70 p-2 rounded-xl">
               <CalendarIcon size={20} />
             </div>
             <div>
@@ -3064,6 +3138,8 @@ export default function CycleSyncApp() {
   const [notif, setNotif] = useState(DEFAULT_NOTIF);
   const [contraception, setContraception] = useState(DEFAULT_CONTRACEPTION);
   const [logs, setLogs] = useState({});
+  const [activeCheckin, setActiveCheckin] = useState(null);
+  const checkinShownRef = useRef(null);
 
   const userKeyRef = useRef(null);
 
@@ -3174,6 +3250,37 @@ export default function CycleSyncApp() {
   const updateNotif = useCallback(makeFieldUpdater(setNotif, "notif"), []);
   const updateContraception = useCallback(makeFieldUpdater(setContraception, "contraception"), []);
   const updateLogs = useCallback(makeFieldUpdater(setLogs, "logs"), []);
+
+  // Munculkan dialog sapaan/pengingat sesuai jam saat ini, sekali per sesi per blok waktu,
+  // dan hanya jika belum dijawab untuk hari ini (dicek dari log Firebase).
+  useEffect(() => {
+    if (authStatus !== "ready" || !cycleSettings.onboarded) return;
+    const block = getHourlyCheckin(now.getHours());
+    const todayISO = toISO(now);
+    const alreadyAnswered = logs[todayISO]?.checkins?.[block.key];
+    if (!alreadyAnswered && checkinShownRef.current !== block.key) {
+      checkinShownRef.current = block.key;
+      setActiveCheckin(block);
+    }
+  }, [authStatus, cycleSettings.onboarded, now, logs]);
+
+  const saveCheckin = (replyText) => {
+    if (!activeCheckin) return;
+    const todayISO = toISO(now);
+    updateLogs((prev) => {
+      const cur = getLog(prev, todayISO);
+      return {
+        ...prev,
+        [todayISO]: {
+          ...cur,
+          checkins: { ...cur.checkins, [activeCheckin.key]: { message: activeCheckin.message, reply: replyText, answeredAt: now.toISOString() } },
+        },
+      };
+    });
+    setActiveCheckin(null);
+    toast(replyText ? "Makasih udah cerita! 💬" : "Dicatat, makasih!");
+  };
+  const skipCheckin = () => setActiveCheckin(null);
 
   const updateAccountInfo = async ({ name, email }) => {
     // Mengubah nama/email akun: pindahkan data ke kunci baru bila email berubah.
@@ -3305,6 +3412,7 @@ export default function CycleSyncApp() {
         </>
       )}
       <Toast toasts={toasts} onDismiss={dismissToast} />
+      <CheckinDialog open={!!activeCheckin} checkin={activeCheckin} onSave={saveCheckin} onSkip={skipCheckin} />
     </div>
   );
 }
